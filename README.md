@@ -1,102 +1,87 @@
-# AI Text Summarizer CLI
+# AI Text Summarizer
 
-A Node.js command-line tool that takes unstructured text and uses the **Gemini 2.5 Flash** API to return a clean, structured summary — including a one-sentence summary, three key points, and a sentiment classification.
+A minimal React web app built with **Vite** and **Tailwind CSS** that takes unstructured text and generates a structured, AI-powered summary using the **Google Gemini API** (`gemini-2.5-flash`).
+
+![App Screenshot](./screenshot.png)
 
 ---
 
-## Setup & Installation
+## Features
 
-**1. Clone the repository and install dependencies:**
+- 📝 **Concise Summary** — 2–3 sentence distillation of any input text
+- 🔑 **Key Points** — three bullet-point takeaways
+- 🎭 **Sentiment Badge** — positive / neutral / negative, color-coded
+
+---
+
+## Setup & Run
+
+### 1. Install dependencies
 
 ```bash
-git clone https://github.com/your-username/ai-text-summarizer.git
-cd ai-text-summarizer
 npm install
 ```
 
-**2. Create your `.env` file:**
+### 2. Configure your API key
+
+Create a `.env` file in the project root (use `.env.example` as a reference):
 
 ```bash
-cp .env.example .env
+VITE_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
-Then open `.env` and add your Gemini API key:
+> Get a free API key at [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).  
+> The `VITE_` prefix is required — Vite only exposes environment variables with this prefix to the browser bundle.
 
-```
-GEMINI_API_KEY=your_api_key_here
-```
-
-> Get a free API key at [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-
----
-
-## Usage
-
-### From a text file
-
-Pass any `.txt` file as an argument:
+### 3. Start the dev server
 
 ```bash
-node index.js sample.txt
+npm run dev
 ```
 
-### Via stdin (pipe)
-
-You can also pipe text directly from the terminal:
-
-```bash
-echo "Your text here" | node index.js
-```
-
-Or pipe from another command:
-
-```bash
-cat article.txt | node index.js
-```
-
-The tool will validate your input, call the Gemini API, and print a formatted summary to the console.
+Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## Design Decisions & Prompt Engineering
+## Design Decisions & AI Prompting
 
-### Model Choice: Gemini 2.5 Flash
+### Stack Choice
+I chose **React + Vite + Tailwind CSS** over the original CLI approach to deliver a better user experience within the 1–2 hour time constraint. Vite offers near-instant HMR, and Tailwind keeps styling fast and consistent without a custom stylesheet overhead.
 
-I chose **Gemini 2.5 Flash** specifically for its combination of speed and reasoning capability. For a CLI tool where the user is waiting on a response, latency matters — Flash delivers high-quality results without the wait of heavier models.
+### Prompt Engineering
+The model is instructed to return **only a raw JSON object** with no markdown, no code fences, and no surrounding text:
 
-### Strict JSON Output via Prompt Engineering
-
-The core challenge with using an LLM for structured data is getting reliable, parseable output. I addressed this by designing the prompt to be explicit and restrictive:
-
-- The model is instructed to return **only a raw JSON object** — no markdown fences, no preamble, no explanation.
-- The required schema (`summary`, `keyPoints`, `sentiment`) is defined directly in the prompt with typed constraints (e.g., `sentiment` must be exactly one of `positive`, `neutral`, `negative`).
-- As a safety net, the code also strips any accidental markdown code fences (` ```json `) before parsing, so the tool degrades gracefully even if the model misbehaves.
-
-This approach keeps the parsing logic simple and the output predictable.
-
----
-
-## Trade-offs & Scope
-
-This tool was built within a strict **1–2 hour time limit**, so I made deliberate scoping decisions:
-
-- **Prioritized a robust, working CLI** with clean error handling over building a web UI or a polished front-end. Every failure mode — missing API key, file not found, empty input, invalid JSON from the model — surfaces a clear, actionable error message.
-- **Skipped CI/CD pipelines and automated tests.** With more time, I'd add a Jest test suite and a GitHub Actions workflow for linting and testing on push.
-- **Single-file input only.** With more time, I would add **batch file processing** — accepting multiple file paths as arguments and summarizing each one in sequence, which is a natural extension of the current architecture.
-
-The goal was a clean, honest implementation that demonstrates the core skill clearly, rather than a feature-bloated prototype.
-
----
-
-## Example Output
-
-```
-<!-- Paste your terminal output here -->
+```json
+{
+  "summary": "...",
+  "keyPoints": ["...", "...", "..."],
+  "sentiment": "positive | neutral | negative"
+}
 ```
 
+Enforcing a strict schema makes frontend parsing deterministic and eliminates the need for complex response post-processing. A small cleanup step strips any accidental markdown fences in case the model deviates.
+
 ---
 
-## Requirements
+## Honest Trade-offs
 
-- Node.js v18 or later (required for native ESM and async iterators)
-- A valid Gemini API key
+> **Time constraint: 1–2 hours**
+
+Due to the strict time limit, I made the **conscious decision to call the Gemini API directly from the React frontend** to deliver a working UI quickly.
+
+**In a real production environment, this is not the correct approach.** The API key would be securely held in a **Node.js/Express backend**, which would:
+- Proxy the Gemini request server-side, keeping the key out of the browser bundle
+- Add rate limiting, input validation, and request logging
+- Allow the frontend to remain fully decoupled from any AI provider specifics
+
+This trade-off was made deliberately and with full awareness of the security implications.
+
+---
+
+## Tech Stack
+
+| Tool | Purpose |
+|---|---|
+| React 18 + Vite | UI framework & dev server |
+| Tailwind CSS | Utility-first styling |
+| `@google/genai` | Gemini API SDK |
